@@ -62,11 +62,14 @@ for (i in 1:length(files_sub)) {
   # # pentru fiecare zona
   # for (e in 1:length(ltser$natcode)) {
   
-  r.sub <- crop(r[[1]], ext(rou_buff)) * 0.5
+  r.sub <- crop(r[[1]], ext(rou_buff)) 
   r.sub <- terra::mask(r.sub, rou_buff)
+ 
+  # r.sub[r.sub %in% c(241,242, 255, 251, 252, 253,255,200)] <- NA
+  # elimina factor scale,face rast automat
+  # r.sub <- r.sub * 0.5
   ver.max <- global(r.sub, max, na.rm = T)
   if (is.na(ver.max)) next # daca nu ai valori in susbset, mergi mai departe
-  r.sub[r.sub %in% c(241,242, 255, 251, 252, 253,255,200)] <- NA
   
   # ctry_utm <-  vect(paste0("shp/",names(exts[e]),"_L1_roi.shp"))
   # print(show( ctry_utm ))
@@ -74,11 +77,13 @@ for (i in 1:length(files_sub)) {
   # #plot(mean(r.sub, na.rm = T))
   # #plot(ctry_geo, add = T)
   
-  write_netcdf(x = r.sub, filename = "ncs/SSM_ltser_day.nc", timestamp = day, compression = 9,nvars = 1,  timestep = "days",
-               resolution = "increment", var1_short = "SSM", var1_long = "Surface Soil Moisture - LTSER Rou", precision = "integer",
+  write_netcdf(x = r.sub, filename = "ncs/ssm_ltser_day.nc", timestamp = day, compression = 9,nvars = 1,  timestep = "days",
+               resolution = "increment", var1_short = "ssm", var1_long = "Surface Soil Moisture - LTSER Rou", precision = "float",
                units1 = "%", title = "Surface Soil Moisture", copyright = "copyright: Copernicus Service information 2019 - https://land.copernicus.eu/"
   )
 }
+
+system("cdo -monmean ncs/ssm_ltser_day.nc ncs/ssm_ltser_mon.nc")
 
 
 # # upload to ftp
