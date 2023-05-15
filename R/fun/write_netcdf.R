@@ -29,7 +29,7 @@ write_netcdf <- function(x, filename, timestamp = NA, compression = 7, nvars = 1
   }
   
   y <- x[[1]]
-  fillvalue <- NULL
+  fillvalue <- NA
   
   if (!file.exists(filename)) {
     
