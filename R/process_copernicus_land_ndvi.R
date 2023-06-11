@@ -7,8 +7,19 @@ source("R/fun/write_netcdf.R")
 # write without auxiliary file
 
 files1 <- list.files("/data/MTDA/BIOPAR/BioPar_NDVI300_V1_Global/", recursive = T, full.names = T, pattern = ".nc$")
-dats1_all <- strsplit(files, "1km_|_CEURO") %>% do.call(rbind,.) |> as_tibble() |> dplyr::select(5) |>
+dats1_all <- strsplit(files1, "300_|_GLOBE") %>% do.call(rbind,.) |> as_tibble() |> dplyr::select(5) |>
   unlist() |> substr(1,8) |> as.Date("%Y%m%d")
+files1 <- files1[dats1_all >= as.Date("2015-01-01") & dats1_all <= as.Date("2020-06-30")]
+
+files2 <- list.files("/data/MTDA/BIOPAR/BioPar_NDVI300_V2_Global/", recursive = T, full.names = T, pattern = ".nc$")
+dats2_all <- strsplit(files2, "300_|_GLOBE") %>% do.call(rbind,.) |> as_tibble() |> dplyr::select(5) |>
+  unlist() |> substr(1,8) |> as.Date("%Y%m%d")
+
+files <- c(files2)
+dats_all <- strsplit(files, "300_|_GLOBE") %>% do.call(rbind,.) |> as_tibble() |> dplyr::select(5) |>
+  unlist() |> substr(1,8) |> as.Date("%Y%m%d")
+dats_all[duplicated(dats1_all)] 
+# selecteaza doar pe cele din ziua 1, care reprezinta ndvi pentru ultimele 30 de zile
 
 # elimina duplicatele si alege ultima versiunea superioara a fisierelor
 versions <- 
@@ -24,7 +35,7 @@ versions_max <-
   filter(date >= as.Date("2015-01-01")) # selecteaza fisierele dupa anul 2015
 
 files_sub <- files[versions$cod %in% versions_max$cod]
-dats_sub <- strsplit(files_sub, "1km_|_CEURO") %>% do.call(rbind,.) |> as_tibble() |> dplyr::select(5) |>
+dats_sub <- strsplit(files_sub, "NDVI300_|_GLOBE") %>% do.call(rbind,.) |> as_tibble() |> dplyr::select(5) |>
   unlist() |> substr(1,8) |> as.Date("%Y%m%d")
 length(unique(dats_all))
 
@@ -43,7 +54,6 @@ rou <- vect("shp/rou_border.shp")
 rou_buff <- vect("shp/rou_buff_5km.shp") 
 crs(ltser_buff) <- rs_wgs84 
 
-
 # # reluare de unde s-a oprit
 # dats_all <- strsplit(files_final, "1km_|_CEURO") %>% do.call(rbind,.) |> as_tibble() |> dplyr::select(5) |>
 #   unlist() |> substr(1,8) |> as.Date("%Y%m%d")
@@ -53,7 +63,7 @@ crs(ltser_buff) <- rs_wgs84
 
 for (i in 1:length(files_sub)) {
   # fromateaza data
-  day <- strsplit(files_sub[i], "1km_|_CEURO")[[1]][5] %>% substr(1,12) %>% as.POSIXct("%Y%m%d%H%M", tz = "UTC")
+  day <- strsplit(files_sub[i], "NDVI300_|_GLOBE")[[1]][5] %>% substr(1,12) %>% as.POSIXct("%Y%m%d%H%M", tz = "UTC")
   print(day)
   # incepe procesarea
   r <- rast(files_sub[i])
@@ -76,13 +86,17 @@ for (i in 1:length(files_sub)) {
   # #plot(mean(r.sub, na.rm = T))
   # #plot(ctry_geo, add = T)
   
-  write_netcdf(x = r.sub, filename = "ncs/ssm_ltser_day.nc", timestamp = day, compression = 9,nvars = 1,  timestep = "days",
-               resolution = "increment", var1_short = "ssm", var1_long = "Surface Soil Moisture - LTSER Rou", precision = "float",
-               units1 = "%", title = "Surface Soil Moisture", copyright = "copyright: Copernicus Service information 2019 - https://land.copernicus.eu/"
+  write_netcdf(x = r.sub, filename = "ncs/ndvi_ltser_10day.nc", timestamp = day, compression = 9,nvars = 1,  timestep = "days",
+               resolution = "increment", var1_short = "ndvi", var1_long = "NORMALIZED DIFFERENCE VEGETATION INDEX - LTSER Rou", precision = "float",
+               units1 = "", title = "Surface Soil Moisture", copyright = "copyright: Copernicus Service information 2019 - https://land.copernicus.eu/"
   )
 }
 
-system("cdo -monmean ncs/ssm_ltser_day.nc ncs/ssm_ltser_mon.nc")
+
+nc <- rast("ncs/ndvi_ltser_10day.nc")
+dats <- names(nc) %>% gsub("ndvi_days=", "",.) |> as.numeric() |> as.Date(origin = "1970-1-1")
+timesteps <- which(format(dats, "%d") %in% "21")
+system(paste0("cdo select,timestep=",gsub(" " , "", toString(timesteps))," ncs/ndvi_ltser_10day.nc ncs/ndvi_ltser_mon.nc"))
 
 
 # # upload to ftp
