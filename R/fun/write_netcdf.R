@@ -1,5 +1,6 @@
 write_netcdf <- function(x, filename, timestamp = NA, compression = 7, nvars = 1, timestep = "hours", resolution = "month",
-                         var1_short = NA, var1_long = NA, units1 = NA, precision = "float", title = NA, copyright = NA) {
+                         var1_short = NA, var1_long = NA, units1 = NA, precision = "float", title = NA, copyright = NA,
+                         rnd = 1) {
   
   require(ncdf4)
   
@@ -44,12 +45,12 @@ write_netcdf <- function(x, filename, timestamp = NA, compression = 7, nvars = 1
       var2 <- ncvar_def("quality_flag", "degree Celsius", list(londim, latdim, timedim), fillvalue, 
                         "Q_FLAGS", prec = "float", shuffle = F, compression = compression)
       ncout <- nc_create(filename, list(var1, var2), force_v4 = T)
-      ncvar_put(ncout, var1, round(values(x[[1]], mat = F),1),start = c(1,1, time_index), count = c(-1,-1,1))
-      ncvar_put(ncout, var2, round(values(x[[2]], mat = F),1),start = c(1,1, time_index), count = c(-1,-1,1))
+      ncvar_put(ncout, var1, round(values(x[[1]], mat = F),rnd),start = c(1,1, time_index), count = c(-1,-1,1))
+      ncvar_put(ncout, var2, round(values(x[[2]], mat = F),rnd),start = c(1,1, time_index), count = c(-1,-1,1))
     } else {
       ncout <- nc_create(filename, var1, force_v4 = T)
       # create netCDF file and put arrays
-      ncvar_put(ncout, var1, round(values(x, mat = F),1),start = c(1,1, time_index), count = c(-1,-1,1))
+      ncvar_put(ncout, var1, round(values(x, mat = F),rnd),start = c(1,1, time_index), count = c(-1,-1,1))
     }
     
     
@@ -90,13 +91,13 @@ write_netcdf <- function(x, filename, timestamp = NA, compression = 7, nvars = 1
     
     if (nvars == 2) {
       
-      ncvar_put(ncid_old, varid = var1_short, vals = round(values(x[[1]], mat = F),1),start = c(1,1, time_index), count = c(-1,-1,1))
-      ncvar_put(ncid_old, varid = var2_short, vals = round(values(x[[2]], mat = F),1),start = c(1,1, time_index), count = c(-1,-1,1))
+      ncvar_put(ncid_old, varid = var1_short, vals = round(values(x[[1]], mat = F),rnd),start = c(1,1, time_index), count = c(-1,-1,1))
+      ncvar_put(ncid_old, varid = var2_short, vals = round(values(x[[2]], mat = F),rnd),start = c(1,1, time_index), count = c(-1,-1,1))
       ncvar_put(ncid_old, varid = timelabel, vals =  timedim$vals, start = c(1), count = length(timedim$vals))
     } else {
       # put variables
       #dimensiunea temporala este data de data de inceput a fisierului nc minus data actuala
-      ncvar_put(ncid_old, varid = var1_short, vals = round(terra::values(x[[1]], mat = F),1),start = c(1,1, time_index), count = c(-1,-1,1))
+      ncvar_put(ncid_old, varid = var1_short, vals = round(terra::values(x[[1]], mat = F),rnd),start = c(1,1, time_index), count = c(-1,-1,1))
       ncvar_put(ncid_old, varid = timelabel, vals =  timedim$vals, start = c(1), count = length(timedim$vals))
     }
     
