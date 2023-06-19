@@ -89,7 +89,9 @@ for (i in 1:length(files_sub)) {
 nc <- rast("ncs/ndvip1_ltser_10day.nc")
 dats <- names(nc) %>% gsub("ndvi_days=", "",.) |> as.numeric() |> as.Date(origin = "1970-1-1")
 
-system(paste0("cdo monmean ncs/ndvip1_ltser_10day.nc ndvip1_ltser_mon.nc"))
+system(paste0("cdo monmean ncs/ndvip1_ltser_10day.nc ncs/ndvip1_ltser_mon.nc"))
+
+system("cdo mergetime  ncs/ndvip1_ltser_mon.nc  ncs/ndvip2_ltser_mon.nc  ncs/ndvi_ltser_mon.nc")
 
 
 # # upload to ftp
