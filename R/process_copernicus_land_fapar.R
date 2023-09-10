@@ -31,35 +31,26 @@ dats3_all <- strsplit(files3, "RT2_|_GLOBE") %>% do.call(rbind,.) |> as_tibble()
   unlist() |> substr(1,8) |> as.Date("%Y%m%d")
 
 
-
-
 files <- c(files1, files2,files3)
 dats_all <-c(dats1_all, dats2_all, dats3_all)
 dats_all[duplicated(dats_all)] 
-# selecteaza doar pe cele din ziua 1, care reprezinta ndvi pentru ultimele 30 de zile
 
+# citeste datele raster pentru completare
 
+fapar <- rast("ncs/fapar_ltser_10day.nc")
+rdats <- as.Date(names(fapar) %>% gsub("fapar_days=", "",.) %>% as.integer(), origin = "1970-1-1 00:00:00")
 
-
-files_sub <- files[dats_all < as.Date("2020-07-01")]
-dats_sub <- strsplit(files_sub, "NDVI300_|_GLOBE") %>% do.call(rbind,.) |> as_tibble() |> dplyr::select(5) |>
+files_sub <- files[!dats_all %in% rdats]
+dats_sub <- strsplit(files_sub, "RT2_|_GLOBE") %>% do.call(rbind,.) |> as_tibble() |> dplyr::select(4) |>
   unlist() |> substr(1,8) |> as.Date("%Y%m%d")
-length(unique(dats_all))
 
-# verificare selectie
-files[dats_all %in% as.Date("2017-09-17")]
-files_sub[dats_sub %in% as.Date("2017-09-17")]
 
-# fisier vector
-ltser <- vect("shp/ltser.topojson")
-ltser$name_stand <- c("brailaislands", "bucegipiatracraiului", "danubedelta", "neajlov", "retezat", "rodneicalimani")
-ltser_buff <- buffer(ltser, 0.05)
 
 # pentru climp raster
 rs_wgs84 <- "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4326\"]]"
 rou <- vect("shp/rou_border.shp") 
 rou_buff <- vect("shp/rou_buff_5km.shp") 
-crs(ltser_buff) <- rs_wgs84 
+
 
 # # reluare de unde s-a oprit
 # dats_all <- strsplit(files_final, "1km_|_CEURO") %>% do.call(rbind,.) |> as_tibble() |> dplyr::select(5) |>
@@ -68,12 +59,12 @@ crs(ltser_buff) <- rs_wgs84
 # 
 # files_final <- files_final[!dats_all %in% tifs]
 
-for (i in 1:length(files)) {
+for (i in 1:length(files_sub)) {
   # fromateaza data
   day <- dats_all[i]
   print(day)
   # incepe procesarea
-  r <- rast(files[i])
+  r <- rast(files_sub[i])
   
   # # pentru fiecare zona
   # for (e in 1:length(ltser$natcode)) {
