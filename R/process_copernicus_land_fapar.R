@@ -61,7 +61,7 @@ rou_buff <- vect("shp/rou_buff_5km.shp")
 
 for (i in 1:length(files_sub)) {
   # fromateaza data
-  day <- dats_all[i]
+  day <- dats_sub[i]
   print(day)
   # incepe procesarea
   r <- rast(files_sub[i])
