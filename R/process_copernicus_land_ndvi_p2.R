@@ -43,16 +43,23 @@ length(unique(dats_all))
 files[dats_all %in% as.Date("2017-09-17")]
 files_sub[dats_sub %in% as.Date("2017-09-17")]
 
-# fisier vector
-ltser <- vect("shp/ltser.topojson")
-ltser$name_stand <- c("brailaislands", "bucegipiatracraiului", "danubedelta", "neajlov", "retezat", "rodneicalimani")
-ltser_buff <- buffer(ltser, 0.05)
+ndvi <- rast("ncs/ndvip2_ltser_10day.nc")
+rdats <- as.Date(names(ndvi) %>% gsub("ndvi_days=", "",.) %>% as.integer(), origin = "1970-1-1 00:00:00")
+
+files_sub2 <- files_sub[!dats_sub %in% rdats]
+dats_sub2 <- strsplit(files_sub2, "NDVI300_|_GLOBE") %>% do.call(rbind,.) |> as_tibble() |> dplyr::select(5) |>
+  unlist() |> substr(1,8) |> as.Date("%Y%m%d")
+
+# # fisier vector
+# ltser <- vect("shp/ltser.topojson")
+# ltser$name_stand <- c("brailaislands", "bucegipiatracraiului", "danubedelta", "neajlov", "retezat", "rodneicalimani")
+# ltser_buff <- buffer(ltser, 0.05)
 
 # pentru climp raster
 rs_wgs84 <- "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4326\"]]"
 rou <- vect("shp/rou_border.shp") 
 rou_buff <- vect("shp/rou_buff_5km.shp") 
-crs(ltser_buff) <- rs_wgs84 
+# crs(ltser_buff) <- rs_wgs84 
 
 # # reluare de unde s-a oprit
 # dats_all <- strsplit(files_final, "1km_|_CEURO") %>% do.call(rbind,.) |> as_tibble() |> dplyr::select(5) |>
@@ -61,12 +68,12 @@ crs(ltser_buff) <- rs_wgs84
 # 
 # files_final <- files_final[!dats_all %in% tifs]
 
-for (i in 1:length(files_sub)) {
+for (i in 1:length(files_sub2)) {
   # fromateaza data
-  day <- strsplit(files_sub[i], "NDVI300_|_GLOBE")[[1]][5] %>% substr(1,12) %>% as.POSIXct("%Y%m%d%H%M", tz = "UTC")
+  day <- strsplit(files_sub2[i], "NDVI300_|_GLOBE")[[1]][5] %>% substr(1,12) %>% as.POSIXct("%Y%m%d%H%M", tz = "UTC")
   print(day)
   # incepe procesarea
-  r <- rast(files_sub[i])
+  r <- rast(files_sub2[i])
   
   # # pentru fiecare zona
   # for (e in 1:length(ltser$natcode)) {
@@ -98,6 +105,9 @@ nc <- rast("ncs/ndvip2_ltser_10day.nc")
 dats <- names(nc) %>% gsub("ndvi_days=", "",.) |> as.numeric() |> as.Date(origin = "1970-1-1")
 timesteps <- which(format(dats, "%d") %in% "21")
 system(paste0("cdo select,timestep=",gsub(" " , "", toString(timesteps))," ncs/ndvip2_ltser_10day.nc ncs/ndvip2_ltser_mon.nc"))
+
+system("cdo -O mergetime  ncs/ndvip1_ltser_mon.nc  ncs/ndvip2_ltser_mon.nc  ncs/ndvi_ltser_mon.nc")
+
 
 
 # # upload to ftp
