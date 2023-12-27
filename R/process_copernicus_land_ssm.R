@@ -33,16 +33,19 @@ length(unique(dats_all))
 files[dats_all %in% as.Date("2017-09-17")]
 files_sub[dats_sub %in% as.Date("2017-09-17")]
 
-# fisier vector
-ltser <- vect("shp/ltser.topojson")
-ltser$name_stand <- c("brailaislands", "bucegipiatracraiului", "danubedelta", "neajlov", "retezat", "rodneicalimani")
-ltser_buff <- buffer(ltser, 0.05)
+
+smi <- rast("ncs/ssm_ltser_day.nc")
+rdats <- as.Date(names(smi) %>% gsub("ssm_days=", "",.) %>% as.integer(), origin = "1970-1-1 00:00:00")
+
+files_sub2 <- files_sub[!dats_sub %in% rdats]
+dats_sub2 <- strsplit(files_sub2, "1km_|_CEURO") %>% do.call(rbind,.) |> as_tibble() |> dplyr::select(5) |>
+  unlist() |> substr(1,8) |> as.Date("%Y%m%d")
 
 # pentru climp raster
 rs_wgs84 <- "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4326\"]]"
 rou <- vect("shp/rou_border.shp") 
 rou_buff <- vect("shp/rou_buff_5km.shp") 
-crs(ltser_buff) <- rs_wgs84 
+#crs(ltser_buff) <- rs_wgs84 
 
 
 # # reluare de unde s-a oprit
@@ -52,12 +55,12 @@ crs(ltser_buff) <- rs_wgs84
 # 
 # files_final <- files_final[!dats_all %in% tifs]
 
-for (i in 1:length(files_sub)) {
+for (i in 1:length(files_sub2)) {
   # fromateaza data
-  day <- strsplit(files_sub[i], "1km_|_CEURO")[[1]][5] %>% substr(1,12) %>% as.POSIXct("%Y%m%d%H%M", tz = "UTC")
+  day <- strsplit(files_sub2[i], "1km_|_CEURO")[[1]][5] %>% substr(1,12) %>% as.POSIXct("%Y%m%d%H%M", tz = "UTC")
   print(day)
   # incepe procesarea
-  r <- rast(files_sub[i])
+  r <- rast(files_sub2[i])
   
   # # pentru fiecare zona
   # for (e in 1:length(ltser$natcode)) {
